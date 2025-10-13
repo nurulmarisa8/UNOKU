@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const cpuHandTitle = document.getElementById("cpu-hand-title");
   const activeColorText = document.getElementById("active-color-text");
   const challengeUnoButton = document.getElementById("challenge-uno-button");
+  const turnIndicator = document.getElementById("turn-indicator");
+  const turnIndicatorText = document.getElementById("turn-indicator-text");
 
   let deck = [];
   let playerHand = [];
@@ -124,11 +126,54 @@ document.addEventListener("DOMContentLoaded", () => {
       ];
     }
     currentPlayer = "player";
-    renderAll();
-    updateStatus("Ronde dimulai. Giliran Anda!");
+    // renderAll(); // Diganti dengan animasi
+    animateDealing(); // Memulai ronde dengan animasi pembagian kartu
   }
 
   // FUNGSI-FUNGSI TAMPILAN (RENDER)
+  function animateDealing() {
+    playerHandDiv.innerHTML = "";
+    cpuHandDiv.innerHTML = "";
+    renderDiscardPile();
+    updateHandTitles();
+    updateStatus("Membagikan kartu...");
+
+    let dealIndex = 0;
+    const dealInterval = setInterval(() => {
+      if (dealIndex < 7) {
+        // Bagikan ke pemain
+        const playerCardImg = document.createElement("img");
+        playerCardImg.src = playerHand[dealIndex].image;
+        playerCardImg.className =
+          "w-24 h-36 player-card cursor-pointer card-deal-animation";
+        playerHandDiv.appendChild(playerCardImg);
+
+        // Bagikan ke CPU
+        const cpuCardImg = document.createElement("img");
+        cpuCardImg.src = "asset/back.png";
+        cpuCardImg.className = "w-24 h-36 card-deal-animation";
+        cpuHandDiv.appendChild(cpuCardImg);
+
+        setTimeout(() => {
+          playerCardImg.style.opacity = 1;
+          playerCardImg.style.transform = "translateY(0)";
+          cpuCardImg.style.opacity = 1;
+          cpuCardImg.style.transform = "translateY(0)";
+        }, 50);
+
+        dealIndex++;
+      } else {
+        clearInterval(dealInterval);
+        // Setelah animasi selesai, render ulang dengan event listener dan highlight
+        setTimeout(() => {
+          showTurnIndicator("player");
+          updateStatus("Ronde dimulai. Giliran Anda!"); // Status bawah tetap ada
+          renderAll();
+        }, 500);
+      }
+    }, 150); // Interval waktu antar kartu
+  }
+
   function renderAll() {
     renderHand(playerHand, playerHandDiv, "player");
     renderHand(cpuHand, cpuHandDiv, "cpu");
@@ -145,6 +190,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (owner === "player") {
         cardImg.classList.add("player-card", "cursor-pointer");
+        // Tambahkan efek highlight jika kartu bisa dimainkan
+        if (currentPlayer === "player" && isMoveValid(card, hand)) {
+          cardImg.classList.add("playable-card");
+        } else {
+          cardImg.classList.remove("playable-card");
+        }
         cardImg.addEventListener("click", () => playerPlayCard(card));
       }
 
@@ -197,6 +248,22 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("unoPlayerBalance", playerBalance.toString());
   }
 
+  function showTurnIndicator(player) {
+    const text = player === "player" ? "Giliran Anda!" : "Giliran Bot";
+    turnIndicatorText.textContent = text;
+    turnIndicatorText.className =
+      player === "player"
+        ? "text-5xl font-black text-center text-green-400"
+        : "text-5xl font-black text-center text-red-400";
+
+    turnIndicator.classList.remove("hidden");
+    turnIndicator.classList.add("turn-indicator-animation");
+
+    setTimeout(() => {
+      turnIndicator.classList.remove("turn-indicator-animation");
+      turnIndicator.classList.add("hidden");
+    }, 2500); // Durasi harus sama dengan animasi CSS
+  }
   // FUNGSI LOGIKA PERMAINAN
 
   function isMoveValid(card, hand) {
@@ -254,6 +321,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function cpuTurn() {
+    showTurnIndicator("cpu");
     updateStatus("Giliran Bot...");
     setTimeout(() => {
       let cardToPlay = cpuHand.find((card) => isMoveValid(card, cpuHand));
@@ -263,12 +331,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         clearTimeout(challengeTimer);
         challengeUnoButton.classList.add("hidden");
-        cpuUnoCalled = false; 
+        cpuUnoCalled = false;
 
         if (cpuHand.length === 1) {
           challengeUnoButton.classList.remove("hidden");
           challengeTimer = setTimeout(() => {
-            cpuUnoCalled = true; 
+            cpuUnoCalled = true;
             updateStatus("Bot berhasil UNO!");
             challengeUnoButton.classList.add("hidden");
           }, 3000);
@@ -403,11 +471,13 @@ document.addEventListener("DOMContentLoaded", () => {
     currentPlayer = currentPlayer === "player" ? "cpu" : "player";
     playerHasDrawnThisTurn = false;
     if (currentPlayer === "cpu") {
-      cpuTurn();
+      cpuTurn(); // showTurnIndicator dipanggil di dalam cpuTurn
     } else {
       challengeUnoButton.classList.add("hidden");
       clearTimeout(challengeTimer);
       updateStatus("Giliran Anda!");
+      showTurnIndicator("player");
+      renderAll(); // Render ulang untuk update highlight kartu
     }
   }
 

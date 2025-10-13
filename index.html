@@ -8,22 +8,71 @@
     <script src="main.js" defer></script>
     <style>
       .card-stack img {
-        margin-right: -55px;
+        margin: 0 5px; /* Memberi jarak 5px di kiri dan kanan setiap kartu */
         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
         border: 2px solid white;
         border-radius: 8px;
         transition: all 0.2s ease-in-out;
       }
-      .card-stack img:last-child {
-        margin-right: 0;
-      }
       .player-card:hover {
         transform: translateY(-20px) scale(1.05);
         z-index: 10;
       }
+      .playable-card {
+        border-color: #4ade80; /* Border hijau terang */
+        animation: pulse-green 2s infinite; /* Terapkan animasi denyut */
+      }
+      @keyframes pulse-green {
+        0% {
+          box-shadow: 0 0 15px 3px rgba(74, 222, 128, 0.6);
+        }
+        50% {
+          box-shadow: 0 0 25px 8px rgba(74, 222, 128, 0.9);
+        }
+        100% {
+          box-shadow: 0 0 15px 3px rgba(74, 222, 128, 0.6);
+        }
+      }
+      .card-deal-animation {
+        opacity: 0;
+        transform: translateY(50px);
+        transition: all 0.4s ease-out;
+      }
+      #turn-indicator {
+        transition: opacity 0.5s ease-in-out;
+      }
+      .turn-indicator-animation {
+        animation: fadeInOut 2.5s ease-in-out forwards;
+      }
+      @keyframes fadeInOut {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.8);
+        }
+        20% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        80% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+      }
     </style>
   </head>
   <body class="bg-gray-900 text-white font-sans">
+    <!-- Elemen Notifikasi Giliran -->
+    <div
+      id="turn-indicator"
+      class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 p-8 rounded-2xl shadow-2xl z-50 pointer-events-none"
+    >
+      <h2 id="turn-indicator-text" class="text-5xl font-black text-center"></h2>
+    </div>
+
     <div class="flex flex-col min-h-screen">
       <main
         class="w-full flex-grow p-6 flex flex-col justify-between bg-blue-900/50"
@@ -137,5 +186,3 @@
     </div>
   </body>
 </html>
-
-
