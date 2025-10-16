@@ -9,8 +9,8 @@
     <style>
       .card-stack img {
         margin: 0 5px; /* Memberi jarak 5px di kiri dan kanan setiap kartu */
-        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
-        border: 2px solid white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6); /* Bayangan lebih kuat */
+        border: 2px solid rgba(255, 255, 255, 0.9); /* Border sedikit lebih lembut */
         border-radius: 8px;
         transition: all 0.2s ease-in-out;
       }
@@ -39,7 +39,7 @@
         transition: all 0.4s ease-out;
       }
       #turn-indicator {
-        transition: opacity 0.5s ease-in-out;
+        transition: opacity 0.3s ease-in-out;
       }
       .turn-indicator-animation {
         animation: fadeInOut 2.5s ease-in-out forwards;
@@ -47,37 +47,68 @@
       @keyframes fadeInOut {
         0% {
           opacity: 0;
-          transform: translate(-50%, -50%) scale(0.8);
+          transform: translateY(-50%) scale(0.8);
         }
         20% {
           opacity: 1;
-          transform: translate(-50%, -50%) scale(1);
+          transform: translateY(-50%) scale(1);
         }
         80% {
           opacity: 1;
-          transform: translate(-50%, -50%) scale(1);
+          transform: translateY(-50%) scale(1);
         }
         100% {
           opacity: 0;
-          transform: translate(-50%, -50%) scale(1.2);
+          transform: translateY(-50%) scale(1.2);
         }
+      }
+      body.custom-bg {
+        background-image: url("asset/background.png");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+      }
+      @keyframes popup-anim {
+        0% {
+          transform: scale(0.5);
+          opacity: 0;
+        }
+        70% {
+          transform: scale(1.1);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .animate-popup {
+        animation: popup-anim 0.5s ease-out forwards;
       }
     </style>
   </head>
-  <body class="bg-gray-900 text-white font-sans">
-    <!-- Elemen Notifikasi Giliran -->
+  <!-- Menambahkan kelas 'custom-bg' untuk menerapkan latar belakang gambar -->
+  <body class="custom-bg text-white font-sans">
+    <!-- Popup Logo UNO -->
     <div
-      id="turn-indicator"
-      class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 p-8 rounded-2xl shadow-2xl z-50 pointer-events-none"
+      id="uno-logo-popup"
+      class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100]"
     >
-      <h2 id="turn-indicator-text" class="text-5xl font-black text-center"></h2>
+      <img src="asset/uno!.png" alt="UNO Logo" class="w-1/2 max-w-md" />
     </div>
 
-    <div class="flex flex-col min-h-screen">
-      <main
-        class="w-full flex-grow p-6 flex flex-col justify-between bg-blue-900/50"
-      >
-        <h1 class="text-center text-3xl font-bold mb-4 opacity-80">UNO</h1>
+    <!-- Elemen Notifikasi Popup (digunakan untuk semua notifikasi) -->
+    <div
+      id="notification-popup"
+      class="hidden fixed top-1/2 left-6 -translate-y-1/2 bg-gray-900 border-4 p-6 rounded-2xl shadow-2xl z-50 pointer-events-none"
+    >
+      <h2 id="notification-text" class="text-3xl font-bold text-center"></h2>
+    </div>
+
+    <div class="flex h-screen">
+      <main class="flex-grow p-6 flex flex-col justify-between bg-black/60">
+        <h1 class="text-center text-3xl font-bold opacity-80">UNO</h1>
 
         <div>
           <h2 id="cpu-hand-title" class="text-lg font-semibold mb-2">
@@ -122,67 +153,64 @@
         </div>
       </main>
 
-      <footer
-        class="w-full bg-gray-800 p-4 border-t-4 border-gray-700 flex flex-wrap items-center justify-center lg:justify-around gap-4"
-      >
-        <div class="flex items-center gap-4">
-          <div class="bg-gray-700 p-3 rounded-lg shadow-inner text-center">
-            <label
-              for="player-balance"
-              class="block text-sm font-medium text-gray-400"
-              >Saldo Anda:</label
-            >
-            <p id="player-balance" class="text-2xl font-bold text-green-400">
-              $5000
-            </p>
-          </div>
-          <div class="bg-gray-700 p-3 rounded-lg shadow-inner">
-            <label
-              for="bet-amount"
-              class="block text-sm font-medium text-gray-400"
-              >Jumlah Taruhan:</label
-            >
-            <input
-              type="number"
-              id="bet-amount"
-              value="100"
-              class="w-32 bg-gray-900 text-white p-2 rounded mt-1 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div class="flex items-center gap-4">
-          <button
-            id="start-round-button"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg shadow-lg"
-          >
-            Mulai Ronde
-          </button>
-          <button
-            id="uno-button"
-            class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg hidden"
-          >
-            UNO!
-          </button>
-          <button
-            id="challenge-uno-button"
-            class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg shadow-lg hidden"
-          >
-            Panggil UNO!
-          </button>
-        </div>
-
-        <div
-          class="bg-black/40 p-3 rounded-lg flex-grow min-w-[250px] text-center"
+      <!-- Wrapper untuk Panel Kontrol Samping -->
+      <div class="w-80 flex items-center p-6">
+        <aside
+          class="w-full bg-gray-800/90 p-6 border-2 border-gray-700/80 rounded-2xl shadow-2xl backdrop-blur-sm"
         >
-          <p
-            id="status-text"
-            class="text-yellow-300 h-full flex items-center justify-center"
-          >
-            Masukkan taruhan dan mulai ronde.
-          </p>
-        </div>
-      </footer>
+          <div>
+            <h2 class="text-2xl font-bold mb-6 text-center">
+              Kontrol Permainan
+            </h2>
+            <div
+              class="bg-gray-700 p-4 rounded-lg shadow-inner text-center mb-4"
+            >
+              <label
+                for="player-balance"
+                class="block text-sm font-medium text-gray-400"
+                >Saldo Anda:</label
+              >
+              <p id="player-balance" class="text-2xl font-bold text-green-400">
+                $5000
+              </p>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg shadow-inner mb-6">
+              <label
+                for="bet-amount"
+                class="block text-sm font-medium text-gray-400"
+                >Jumlah Taruhan:</label
+              >
+              <input
+                type="number"
+                id="bet-amount"
+                value="100"
+                class="w-full bg-gray-900 text-white p-2 rounded mt-1 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-4 mt-8">
+            <button
+              id="start-round-button"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg shadow-lg"
+            >
+              Mulai Ronde
+            </button>
+            <button
+              id="uno-button"
+              class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg hidden"
+            >
+              UNO!
+            </button>
+            <button
+              id="challenge-uno-button"
+              class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg shadow-lg hidden"
+            >
+              Panggil UNO!
+            </button>
+          </div>
+        </aside>
+      </div>
     </div>
   </body>
 </html>

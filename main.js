@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const cpuHandDiv = document.getElementById("cpu-hand");
   const discardPileDiv = document.getElementById("discard-pile");
   const drawPileImg = document.getElementById("draw-pile");
-  const statusText = document.getElementById("status-text");
   const unoButton = document.getElementById("uno-button");
   const playerBalanceSpan = document.getElementById("player-balance");
   const betAmountInput = document.getElementById("bet-amount");
@@ -13,8 +12,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const cpuHandTitle = document.getElementById("cpu-hand-title");
   const activeColorText = document.getElementById("active-color-text");
   const challengeUnoButton = document.getElementById("challenge-uno-button");
-  const turnIndicator = document.getElementById("turn-indicator");
-  const turnIndicatorText = document.getElementById("turn-indicator-text");
+  const notificationPopup = document.getElementById("notification-popup");
+  const notificationText = document.getElementById("notification-text");
+  const unoLogoPopup = document.getElementById("uno-logo-popup");
 
   let deck = [];
   let playerHand = [];
@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let playerHasDrawnThisTurn = false;
   let challengeTimer = null;
   let cpuUnoCalled = false;
+  let notificationTimeout = null;
   const colorMap = {
     Merah: "text-red-400",
     Hijau: "text-green-400",
@@ -93,41 +94,54 @@ document.addEventListener("DOMContentLoaded", () => {
   function startNewRound() {
     const bet = parseInt(betAmountInput.value);
     if (isNaN(bet) || bet < 100 || bet > playerBalance) {
-      updateStatus("Taruhan tidak valid! (Min. $100)");
+      showNotification("Taruhan tidak valid! (Min. $100)", "warning");
       return;
     }
 
-    playerBalance -= bet;
-    updateBalanceDisplay();
     startRoundButton.disabled = true;
     betAmountInput.disabled = true;
 
-    clearTimeout(unoTimer);
-    unoButton.classList.add("hidden");
-    clearTimeout(challengeTimer);
-    challengeUnoButton.classList.add("hidden");
-    unoCalled = false;
-    cpuUnoCalled = false;
+    // Tampilkan popup logo
+    const logoImg = unoLogoPopup.querySelector("img");
+    logoImg.classList.remove("animate-popup"); // Reset animasi
+    void logoImg.offsetWidth; // Trigger reflow
+    logoImg.classList.add("animate-popup");
+    unoLogoPopup.classList.remove("hidden");
 
-    createDeck();
-    shuffleDeck();
-    playerHand = deck.splice(0, 7);
-    cpuHand = deck.splice(0, 7);
-    let startCard = deck.pop();
-    while (startCard.value === "Wild4") {
-      deck.push(startCard);
+    // Sembunyikan popup dan mulai game setelah delay
+    setTimeout(() => {
+      unoLogoPopup.classList.add("hidden");
+
+      // Logika ronde dimulai di sini
+      playerBalance -= bet;
+      updateBalanceDisplay();
+
+      clearTimeout(unoTimer);
+      unoButton.classList.add("hidden");
+      clearTimeout(challengeTimer);
+      challengeUnoButton.classList.add("hidden");
+      unoCalled = false;
+      cpuUnoCalled = false;
+
+      createDeck();
       shuffleDeck();
-      startCard = deck.pop();
-    }
-    discardPile = [startCard];
-    if (startCard.color === "Liar") {
-      startCard.color = ["Merah", "Hijau", "Biru", "Kuning"][
-        Math.floor(Math.random() * 4)
-      ];
-    }
-    currentPlayer = "player";
-    // renderAll(); // Diganti dengan animasi
-    animateDealing(); // Memulai ronde dengan animasi pembagian kartu
+      playerHand = deck.splice(0, 7);
+      cpuHand = deck.splice(0, 7);
+      let startCard = deck.pop();
+      while (startCard.value === "Wild4") {
+        deck.push(startCard);
+        shuffleDeck();
+        startCard = deck.pop();
+      }
+      discardPile = [startCard];
+      if (startCard.color === "Liar") {
+        startCard.color = ["Merah", "Hijau", "Biru", "Kuning"][
+          Math.floor(Math.random() * 4)
+        ];
+      }
+      currentPlayer = "player";
+      animateDealing(); // Memulai ronde dengan animasi pembagian kartu
+    }, 1500); // Durasi popup (1.5 detik)
   }
 
   // FUNGSI-FUNGSI TAMPILAN (RENDER)
@@ -136,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cpuHandDiv.innerHTML = "";
     renderDiscardPile();
     updateHandTitles();
-    updateStatus("Membagikan kartu...");
+    showNotification("Membagikan kartu...", "info", 1500);
 
     let dealIndex = 0;
     const dealInterval = setInterval(() => {
@@ -166,8 +180,8 @@ document.addEventListener("DOMContentLoaded", () => {
         clearInterval(dealInterval);
         // Setelah animasi selesai, render ulang dengan event listener dan highlight
         setTimeout(() => {
-          showTurnIndicator("player");
-          updateStatus("Ronde dimulai. Giliran Anda!"); // Status bawah tetap ada
+          showNotification("Giliran Anda!", "player");
+          // Pesan status bawah sudah dihapus, jadi tidak perlu update lagi
           renderAll();
         }, 500);
       }
@@ -239,31 +253,41 @@ document.addEventListener("DOMContentLoaded", () => {
     cpuHandTitle.textContent = `Bot (${cpuHand.length} kartu)`;
   }
 
-  function updateStatus(message) {
-    statusText.textContent = message;
-  }
-
   function updateBalanceDisplay() {
     playerBalanceSpan.textContent = `$${playerBalance}`;
     localStorage.setItem("unoPlayerBalance", playerBalance.toString());
   }
 
-  function showTurnIndicator(player) {
-    const text = player === "player" ? "Giliran Anda!" : "Giliran Bot";
-    turnIndicatorText.textContent = text;
-    turnIndicatorText.className =
-      player === "player"
-        ? "text-5xl font-black text-center text-green-400"
-        : "text-5xl font-black text-center text-red-400";
+  function showNotification(message, type, duration = 2500) {
+    clearTimeout(notificationTimeout); // Hapus notifikasi sebelumnya jika ada
 
-    turnIndicator.classList.remove("hidden");
-    turnIndicator.classList.add("turn-indicator-animation");
+    notificationText.textContent = message;
+    // Reset kelas
+    notificationPopup.className =
+      "hidden fixed top-1/2 left-6 -translate-y-1/2 bg-gray-900 border-4 p-6 rounded-2xl shadow-2xl z-50 pointer-events-none";
+    notificationText.className = "text-3xl font-bold text-center";
 
-    setTimeout(() => {
-      turnIndicator.classList.remove("turn-indicator-animation");
-      turnIndicator.classList.add("hidden");
-    }, 2500); // Durasi harus sama dengan animasi CSS
+    // Terapkan style berdasarkan tipe
+    if (type === "player") {
+      notificationPopup.classList.add("border-green-400");
+      notificationText.classList.add("text-green-300");
+    } else if (type === "cpu") {
+      notificationPopup.classList.add("border-red-400");
+      notificationText.classList.add("text-red-300");
+    } else if (type === "warning") {
+      notificationPopup.classList.add("border-yellow-400");
+      notificationText.classList.add("text-yellow-300");
+    } else {
+      notificationPopup.classList.add("border-gray-500");
+      notificationText.classList.add("text-white");
+    }
+
+    notificationPopup.classList.remove("hidden");
+    notificationTimeout = setTimeout(() => {
+      notificationPopup.classList.add("hidden");
+    }, duration);
   }
+
   // FUNGSI LOGIKA PERMAINAN
 
   function isMoveValid(card, hand) {
@@ -288,14 +312,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const topCard = discardPile[discardPile.length - 1];
 
     if (card.value === "Wild4" && !isMoveValid(card, playerHand)) {
-      updateStatus(
-        "Anda memiliki kartu lain yang dapat dimainkan. Tidak bisa main Wild4!"
+      showNotification(
+        "Anda punya kartu lain! Tidak bisa main Wild+4.",
+        "warning"
       );
       return;
     }
 
     if (!isMoveValid(card, playerHand)) {
-      updateStatus("Kartu tidak valid!");
+      showNotification("Kartu tidak valid!", "warning");
       return;
     }
 
@@ -321,8 +346,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function cpuTurn() {
-    showTurnIndicator("cpu");
-    updateStatus("Giliran Bot...");
+    showNotification("Giliran Bot", "cpu");
+
     setTimeout(() => {
       let cardToPlay = cpuHand.find((card) => isMoveValid(card, cpuHand));
       if (cardToPlay) {
@@ -337,7 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
           challengeUnoButton.classList.remove("hidden");
           challengeTimer = setTimeout(() => {
             cpuUnoCalled = true;
-            updateStatus("Bot berhasil UNO!");
+            showNotification("Bot berhasil UNO!", "cpu");
             challengeUnoButton.classList.add("hidden");
           }, 3000);
         }
@@ -350,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
         handleCardEffect(cardToPlay, "cpu");
       } else {
         if (deck.length > 0) cpuHand.push(deck.pop());
-        updateStatus("Bot mengambil kartu dan melewati giliran.");
+        showNotification("Bot mengambil kartu.", "info");
         switchTurn();
       }
       renderAll();
@@ -363,20 +388,20 @@ document.addEventListener("DOMContentLoaded", () => {
     switch (card.value) {
       case "Draw2":
         drawCards(opponent, 2);
-        updateStatus(
-          `${playedBy.toUpperCase()} main ${
-            card.value
-          }. Giliran ${playedBy} lagi!`
+        showNotification(
+          `${playedBy === "player" ? "Anda" : "Bot"} main +2. Giliran lagi!`,
+          playedBy === "player" ? "player" : "cpu"
         );
         if (playedBy === "cpu") setTimeout(cpuTurn, 1000);
         return;
 
       case "Skip":
       case "Reverse":
-        updateStatus(
-          `${playedBy.toUpperCase()} main ${
+        showNotification(
+          `${playedBy === "player" ? "Anda" : "Bot"} main ${
             card.value
-          }. Giliran ${playedBy} lagi!`
+          }. Giliran lagi!`,
+          playedBy === "player" ? "player" : "cpu"
         );
         if (playedBy === "cpu") setTimeout(cpuTurn, 1000);
         return;
@@ -401,7 +426,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ["Merah", "Hijau", "Biru", "Kuning"][Math.floor(Math.random() * 4)];
 
           discardPile[discardPile.length - 1].color = chosenColor;
-          updateStatus(`Bot memilih warna ${chosenColor}.`);
+          showNotification(`Bot memilih warna ${chosenColor}.`, "info");
           renderDiscardPile();
           switchTurn();
         }
@@ -447,7 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (choiceMade) return;
         choiceMade = true;
         discardPile[discardPile.length - 1].color = color;
-        updateStatus(`Anda memilih warna ${color}.`);
+        showNotification(`Anda memilih warna ${color}.`, "info");
         renderDiscardPile();
         switchTurn();
         document.body.removeChild(colorPickerDiv);
@@ -475,8 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       challengeUnoButton.classList.add("hidden");
       clearTimeout(challengeTimer);
-      updateStatus("Giliran Anda!");
-      showTurnIndicator("player");
+      showNotification("Giliran Anda!", "player");
       renderAll(); // Render ulang untuk update highlight kartu
     }
   }
@@ -486,9 +510,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let message = "";
     if (winner === "player") {
       playerBalance += bet * 2;
-      message = `Anda MENANG dan mendapat $${bet * 2}!`;
+      message = `Anda MENANG! Hadiah: $${bet * 2}`;
     } else {
-      message = `Anda KALAH taruhan $${bet}.`;
+      message = `Anda KALAH! Taruhan $${bet} hangus.`;
     }
 
     clearTimeout(challengeTimer);
@@ -496,20 +520,28 @@ document.addEventListener("DOMContentLoaded", () => {
     clearTimeout(unoTimer);
     unoButton.classList.add("hidden");
 
-    alert(message);
+    const notificationDuration = 5000;
+    showNotification(
+      message,
+      winner === "player" ? "player" : "cpu",
+      notificationDuration
+    );
 
-    if (playerBalance <= 0) {
-      alert("Game Over! Saldo Anda habis. Saldo direset ke $5000.");
-      playerBalance = 5000;
-    }
-    resetForNewRound();
+    // Beri jeda sebelum mereset ronde agar notifikasi kemenangan/kekalahan terlihat
+    setTimeout(() => {
+      if (playerBalance <= 0) {
+        showNotification("Game Over! Saldo direset ke $5000.", "warning", 5000);
+        playerBalance = 5000;
+      }
+      resetForNewRound();
+    }, notificationDuration);
   }
 
   function resetForNewRound() {
     updateBalanceDisplay();
     startRoundButton.disabled = false;
     betAmountInput.disabled = false;
-    updateStatus("Masukkan taruhan dan mulai ronde baru.");
+    showNotification("Mulai ronde baru kapan saja.", "info", 4000);
     playerHandDiv.innerHTML = "";
     cpuHandDiv.innerHTML = "";
     discardPileDiv.innerHTML = "";
@@ -522,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
     unoCalled = false;
     unoTimer = setTimeout(() => {
       if (!unoCalled) {
-        updateStatus(`${player.toUpperCase()} lupa UNO! Penalti +2 kartu.`);
+        showNotification("Lupa UNO! Penalti +2 kartu.", "warning");
         drawCards(player, 2);
         renderAll();
       }
@@ -538,18 +570,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentPlayer !== "player") return;
 
     if (playerHasDrawnThisTurn) {
-      updateStatus("Anda melewati giliran.");
+      showNotification("Anda melewati giliran.", "info");
       switchTurn();
     } else {
       if (deck.length === 0) {
-        updateStatus("Tumpukan kartu habis!");
+        showNotification("Tumpukan kartu habis!", "warning");
         return;
       }
       playerHand.push(deck.pop());
       playerHasDrawnThisTurn = true;
       renderAll();
-      updateStatus(
-        "Anda mengambil kartu. Mainkan satu kartu atau klik tumpukan lagi untuk melewati giliran."
+      showNotification(
+        "Anda ambil kartu. Mainkan atau klik lagi untuk lewat.",
+        "info"
       );
     }
   });
@@ -557,27 +590,25 @@ document.addEventListener("DOMContentLoaded", () => {
   unoButton.addEventListener("click", () => {
     unoCalled = true;
     clearTimeout(unoTimer);
-    updateStatus("UNO!");
+    showNotification("UNO!", "player");
     unoButton.classList.add("hidden");
   });
 
   challengeUnoButton.addEventListener("click", () => {
     if (cpuHand.length !== 1) {
-      updateStatus("Tidak bisa menantang UNO saat ini.");
+      showNotification("Tantangan tidak valid.", "warning");
       challengeUnoButton.classList.add("hidden");
       return;
     }
 
     if (cpuUnoCalled) {
-      updateStatus("Terlambat! Bot sudah berhasil menyatakan UNO.");
+      showNotification("Terlambat! Bot sudah UNO.", "warning");
       challengeUnoButton.classList.add("hidden");
       return;
     }
 
     clearTimeout(challengeTimer);
-    updateStatus(
-      "Anda berhasil memanggil UNO pada Bot! Bot mengambil 2 kartu."
-    );
+    showNotification("Berhasil! Bot kena penalti +2 kartu.", "player");
     drawCards("cpu", 2);
     renderAll();
     challengeUnoButton.classList.add("hidden");
