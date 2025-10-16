@@ -106,6 +106,38 @@
       <h2 id="notification-text" class="text-3xl font-bold text-center"></h2>
     </div>
 
+    <!-- Popup Akhir Ronde -->
+    <div
+      id="end-round-popup"
+      class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100]"
+    >
+      <div
+        class="bg-gray-800 p-8 rounded-2xl shadow-2xl border-4 w-full max-w-md flex flex-col items-center gap-4"
+      >
+        <h2 id="end-round-title" class="text-4xl font-black"></h2>
+        <p id="end-round-message" class="text-xl text-gray-300"></p>
+        <div class="bg-gray-700 p-4 rounded-lg shadow-inner w-full mt-4">
+          <label
+            for="bet-amount"
+            class="block text-sm font-medium text-gray-400"
+            >Taruhan Ronde Berikutnya:</label
+          >
+          <input
+            type="number"
+            id="bet-amount"
+            value="100"
+            class="w-full bg-gray-900 text-white p-2 rounded mt-1 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg"
+          />
+        </div>
+        <button
+          id="start-round-button"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg shadow-lg mt-2"
+        >
+          Mulai Ronde Lagi
+        </button>
+      </div>
+    </div>
+
     <div class="flex h-screen">
       <main class="flex-grow p-6 flex flex-col justify-between bg-black/60">
         <h1 class="text-center text-3xl font-bold opacity-80">UNO</h1>
@@ -174,28 +206,33 @@
                 $5000
               </p>
             </div>
-            <div class="bg-gray-700 p-4 rounded-lg shadow-inner mb-6">
+          </div>
+
+          <!-- Kontrol Awal Permainan (disembunyikan setelah ronde mulai) -->
+          <div id="initial-controls" class="flex flex-col gap-4 mt-8">
+            <div class="bg-gray-700 p-4 rounded-lg shadow-inner">
               <label
-                for="bet-amount"
+                for="initial-bet-amount"
                 class="block text-sm font-medium text-gray-400"
                 >Jumlah Taruhan:</label
               >
               <input
                 type="number"
-                id="bet-amount"
+                id="initial-bet-amount"
                 value="100"
                 class="w-full bg-gray-900 text-white p-2 rounded mt-1 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg"
               />
             </div>
-          </div>
-
-          <div class="flex flex-col gap-4 mt-8">
             <button
-              id="start-round-button"
+              id="initial-start-button"
               class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg shadow-lg"
             >
-              Mulai Ronde
+              Mulai Permainan
             </button>
+          </div>
+
+          <!-- Tombol Aksi Dalam Game -->
+          <div id="game-action-buttons" class="flex flex-col gap-4 mt-8 hidden">
             <button
               id="uno-button"
               class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-lg transition-colors text-lg shadow-lg hidden"

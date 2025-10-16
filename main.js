@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const drawPileImg = document.getElementById("draw-pile");
   const unoButton = document.getElementById("uno-button");
   const playerBalanceSpan = document.getElementById("player-balance");
+  const initialControls = document.getElementById("initial-controls");
+  const initialBetAmountInput = document.getElementById("initial-bet-amount");
+  const initialStartButton = document.getElementById("initial-start-button");
   const betAmountInput = document.getElementById("bet-amount");
   const startRoundButton = document.getElementById("start-round-button");
   const playerHandTitle = document.getElementById("player-hand-title");
@@ -15,6 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const notificationPopup = document.getElementById("notification-popup");
   const notificationText = document.getElementById("notification-text");
   const unoLogoPopup = document.getElementById("uno-logo-popup");
+  const gameActionButtons = document.getElementById("game-action-buttons");
+  const endRoundPopup = document.getElementById("end-round-popup");
+  const endRoundTitle = document.getElementById("end-round-title");
+  const endRoundMessage = document.getElementById("end-round-message");
 
   let deck = [];
   let playerHand = [];
@@ -92,14 +99,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function startNewRound() {
-    const bet = parseInt(betAmountInput.value);
+    // Tentukan input mana yang digunakan (awal atau dari popup)
+    const currentBetInput = endRoundPopup.classList.contains("hidden")
+      ? initialBetAmountInput
+      : betAmountInput;
+    const bet = parseInt(currentBetInput.value);
+
     if (isNaN(bet) || bet < 100 || bet > playerBalance) {
       showNotification("Taruhan tidak valid! (Min. $100)", "warning");
       return;
     }
 
-    startRoundButton.disabled = true;
-    betAmountInput.disabled = true;
+    // Salin nilai taruhan ke popup untuk konsistensi ronde berikutnya
+    betAmountInput.value = bet;
+    initialBetAmountInput.value = bet;
+
+    // Sembunyikan popup akhir ronde jika terlihat
+    endRoundPopup.classList.add("hidden");
+    initialControls.classList.add("hidden");
 
     // Tampilkan popup logo
     const logoImg = unoLogoPopup.querySelector("img");
@@ -141,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       currentPlayer = "player";
       animateDealing(); // Memulai ronde dengan animasi pembagian kartu
+      gameActionButtons.classList.remove("hidden"); // Tampilkan tombol UNO/Panggil
     }, 1500); // Durasi popup (1.5 detik)
   }
 
@@ -506,6 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function endRound(winner) {
+    resetBoard(); // Bersihkan papan permainan
     const bet = parseInt(betAmountInput.value);
     let message = "";
     if (winner === "player") {
@@ -515,33 +534,42 @@ document.addEventListener("DOMContentLoaded", () => {
       message = `Anda KALAH! Taruhan $${bet} hangus.`;
     }
 
+    updateBalanceDisplay();
+
     clearTimeout(challengeTimer);
     challengeUnoButton.classList.add("hidden");
     clearTimeout(unoTimer);
     unoButton.classList.add("hidden");
 
-    const notificationDuration = 5000;
-    showNotification(
-      message,
-      winner === "player" ? "player" : "cpu",
-      notificationDuration
-    );
+    // Tampilkan popup akhir ronde
+    const popupDiv = endRoundPopup.querySelector("div");
+    popupDiv.classList.remove("border-green-500", "border-red-500");
+    endRoundTitle.classList.remove("text-green-400", "text-red-400");
 
-    // Beri jeda sebelum mereset ronde agar notifikasi kemenangan/kekalahan terlihat
-    setTimeout(() => {
-      if (playerBalance <= 0) {
-        showNotification("Game Over! Saldo direset ke $5000.", "warning", 5000);
-        playerBalance = 5000;
-      }
-      resetForNewRound();
-    }, notificationDuration);
-  }
+    if (winner === "player") {
+      endRoundTitle.textContent = "SELAMAT!";
+      endRoundTitle.classList.add("text-green-400");
+      popupDiv.classList.add("border-green-500");
+    } else {
+      endRoundTitle.textContent = "ANDA KALAH";
+      endRoundTitle.classList.add("text-red-400");
+      popupDiv.classList.add("border-red-500");
+    }
+    endRoundMessage.textContent = message;
 
-  function resetForNewRound() {
-    updateBalanceDisplay();
+    if (playerBalance <= 0) {
+      showNotification("Game Over! Saldo direset ke $5000.", "warning", 4000);
+      playerBalance = 5000;
+      updateBalanceDisplay();
+    }
+
+    endRoundPopup.classList.remove("hidden");
     startRoundButton.disabled = false;
     betAmountInput.disabled = false;
-    showNotification("Mulai ronde baru kapan saja.", "info", 4000);
+    gameActionButtons.classList.add("hidden"); // Sembunyikan tombol UNO/Panggil
+  }
+
+  function resetBoard() {
     playerHandDiv.innerHTML = "";
     cpuHandDiv.innerHTML = "";
     discardPileDiv.innerHTML = "";
@@ -549,22 +577,10 @@ document.addEventListener("DOMContentLoaded", () => {
     activeColorText.className = "text-center mt-2 font-bold";
   }
 
-  function startUnoTimer(player) {
-    unoButton.classList.remove("hidden");
-    unoCalled = false;
-    unoTimer = setTimeout(() => {
-      if (!unoCalled) {
-        showNotification("Lupa UNO! Penalti +2 kartu.", "warning");
-        drawCards(player, 2);
-        renderAll();
-      }
-      unoButton.classList.add("hidden");
-    }, 5000);
-  }
-
   // EVENT LISTENERS & INISIALISASI
 
   startRoundButton.addEventListener("click", startNewRound);
+  initialStartButton.addEventListener("click", startNewRound);
 
   drawPileImg.addEventListener("click", () => {
     if (currentPlayer !== "player") return;
